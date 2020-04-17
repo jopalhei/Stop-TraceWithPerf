@@ -21,8 +21,8 @@ SOFTWARE.
 #>
 
 param(
-    $maxlatencyms = 10,    
-    $TimeToEnd = 10
+    $maxlatencyms = 40,    
+    $TimeToEnd = 60
     
 )
 $maxlatency = $maxlatencyms/1000
@@ -32,6 +32,8 @@ Logman.exe create counter PerfLog-Short -o C:\Temp\PerfLog-Short.blg -f bincirc 
 logman start PerfLog-Short
 logman create trace "storport" -ow -o c:\temp\storport.etl -p "Microsoft-Windows-StorPort" 0xffffffffffffffff 0xff -nb 16 16 -bs 1024 -mode Circular -f bincirc -max 4096 -ets
 $run = $true
+Write-Host "Traces are enabled - Waiting the latency of one Physical Disk to be above $maxlatencyms(ms)" -ForegroundColor Green
+Write-Host "Please don't Close this Powershell Window!" -ForegroundColor Yellow -BackgroundColor Red
 do {
         $values = Get-Counter -Counter $paths
 

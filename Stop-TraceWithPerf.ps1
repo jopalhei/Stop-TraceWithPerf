@@ -28,9 +28,9 @@ param(
 $maxlatency = $maxlatencyms/1000
 $paths = (Get-Counter -ListSet Physicaldisk).PathsWithInstances | where {$_ -like "*\Avg. Disk sec/Transfer" -and $_ -notlike "\PhysicalDisk(_Total)\*" }
 logman delete PerfLog-Short | Out-Null
-Logman.exe create counter PerfLog-Short -o C:\Temp\PerfLog-Short.blg -f bincirc -v mmddhhmm -max 500 -c "\LogicalDisk(*)\*" "\Memory\*" "\Cache\*" "\Network Interface(*)\*{" "\Netlogon(*)\*" "\Paging File(*)\*" "\PhysicalDisk(*)\*" "\Processor(*)\*" "\Processor Information(*)\*" "\Process(*)\*" "\Thread(*)\*" "\Redirector\*" "\Server\*" "\System\*" "\Server Work Queues(*)\*" "\Terminal Services\*" -si 00:00:01
+Logman.exe create counter PerfLog-Short -o C:\Temp\MSPerfData\PerfLog-Short.blg -f bincirc -v mmddhhmm -max 500 -c "\LogicalDisk(*)\*" "\Memory\*" "\Cache\*" "\Network Interface(*)\*{" "\Netlogon(*)\*" "\Paging File(*)\*" "\PhysicalDisk(*)\*" "\Processor(*)\*" "\Processor Information(*)\*" "\Process(*)\*" "\Thread(*)\*" "\Redirector\*" "\Server\*" "\System\*" "\Server Work Queues(*)\*" "\Terminal Services\*" -si 00:00:01
 logman start PerfLog-Short
-logman create trace "storport" -ow -o c:\temp\storport.etl -p "Microsoft-Windows-StorPort" 0xffffffffffffffff 0xff -nb 16 16 -bs 1024 -mode Circular -f bincirc -max 4096 -ets
+logman create trace "storport" -ow -o C:\Temp\MSPerfData\storport.etl -p "Microsoft-Windows-StorPort" 0xffffffffffffffff 0xff -nb 16 16 -bs 1024 -mode Circular -f bincirc -max 4096 -ets
 $run = $true
 Write-Host "Traces are enabled - Waiting the latency of one Physical Disk to be above $maxlatencyms(ms)" -ForegroundColor Green
 Write-Host "Please don't Close this Powershell Window!" -ForegroundColor Yellow -BackgroundColor Red
@@ -42,11 +42,15 @@ do {
             if ($value.Cookedvalue -ge $maxlatency)
             {
                 $Message = "The Stop was triggered at " + (Get-Date) + " on the following counter "
-                $Message | Out-File "C:\temp\PerfCounterTrigger.txt"
-                $value | Out-File "C:\temp\PerfCounterTrigger.txt" -Append
+                $Message | Out-File "C:\Temp\MSPerfData\PerfCounterTrigger.txt"
+                $value | Out-File "C:\Temp\MSPerfData\PerfCounterTrigger.txt" -Append
+                Write-Host "The Stop was triggered at " (Get-Date) " on the following counter " -ForegroundColor Green
+                Write-Host "Physical Disk is " $value.InstanceName " avg. disk sec/transfer = " $value.CookedValue -ForegroundColor Green
+                Write-Host "Starting to Sleep for " $TimeToEnd "(s) and then will stop the traces" -ForegroundColor Green
                 Start-Sleep -Seconds $TimeToEnd
                 logman stop PerfLog-Short
                 logman stop "Storport" -ets
+                Write-Host "Traces were stopped" -ForegroundColor Green
                 $run = $false
                 Break
             }
@@ -54,4 +58,4 @@ do {
     Start-Sleep -Seconds 1
 } while ($run)
 logman delete PerfLog-Short
-
+Write-Host "Your Data is on C:\Temp\MSPerfData\" -ForegroundColor Green
